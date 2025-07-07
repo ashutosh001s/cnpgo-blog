@@ -252,47 +252,75 @@
 
     <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
     <script>
-        // Loading state management
-        let loadingState = {
-            isLoading: false,
-            currentRequest: null,
-            loadingTimeout: null
-        };
-
-        // Utility functions for loading management
-        const LoadingManager = {
-            show: function(source = 'unknown') {
-                console.log('Loading shown by:', source);
-                loadingState.isLoading = true;
-                document.getElementById('global-loading').classList.add('active');
-                
-                // Set a timeout to force hide loading after 10 seconds
-                this.clearTimeout();
-                loadingState.loadingTimeout = setTimeout(() => {
-                    console.warn('Loading timeout reached, force hiding loader');
-                    this.hide('timeout');
-                }, 10000);
-            },
-            
-            hide: function(source = 'unknown') {
-                console.log('Loading hidden by:', source);
-                loadingState.isLoading = false;
-                document.getElementById('global-loading').classList.remove('active');
-                this.clearTimeout();
-            },
-            
-            clearTimeout: function() {
-                if (loadingState.loadingTimeout) {
-                    clearTimeout(loadingState.loadingTimeout);
-                    loadingState.loadingTimeout = null;
-                }
-            },
-            
-            forceHide: function() {
-                console.log('Force hiding loader');
-                this.hide('force');
+        // Modern Loading System - Request-based approach
+        class LoadingManager {
+            constructor() {
+                this.activeRequests = new Set();
+                this.loader = document.getElementById('global-loading');
+                this.maxTimeout = 8000; // 8 seconds max
+                this.timeouts = new Map();
             }
-        };
+
+            // Start loading for a specific request
+            startLoading(requestId) {
+                console.log(`Loading started: ${requestId}`);
+                
+                this.activeRequests.add(requestId);
+                this.showLoader();
+                
+                // Set timeout for this specific request
+                const timeout = setTimeout(() => {
+                    console.warn(`Request ${requestId} timed out`);
+                    this.stopLoading(requestId);
+                }, this.maxTimeout);
+                
+                this.timeouts.set(requestId, timeout);
+            }
+
+            // Stop loading for a specific request
+            stopLoading(requestId) {
+                console.log(`Loading stopped: ${requestId}`);
+                
+                this.activeRequests.delete(requestId);
+                
+                // Clear timeout for this request
+                if (this.timeouts.has(requestId)) {
+                    clearTimeout(this.timeouts.get(requestId));
+                    this.timeouts.delete(requestId);
+                }
+                
+                // Hide loader only if no active requests
+                if (this.activeRequests.size === 0) {
+                    this.hideLoader();
+                }
+            }
+
+            // Force stop all loading
+            stopAllLoading() {
+                console.log('Force stopping all loading');
+                
+                this.activeRequests.clear();
+                this.timeouts.forEach(timeout => clearTimeout(timeout));
+                this.timeouts.clear();
+                this.hideLoader();
+            }
+
+            showLoader() {
+                this.loader.classList.add('active');
+            }
+
+            hideLoader() {
+                this.loader.classList.remove('active');
+            }
+
+            // Get unique request ID
+            getRequestId() {
+                return `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+            }
+        }
+
+        // Initialize loading manager
+        const loadingManager = new LoadingManager();
 
         // Mobile menu functionality
         document.addEventListener('DOMContentLoaded', function() {
@@ -342,78 +370,48 @@
                     toggleMobileMenu();
                 }
             });
-            
-            // HTMX fallback
-            if (!window.htmx) {
-                console.error('HTMX not initialized, falling back to full page load');
-                document.querySelectorAll('a[hx-get]').forEach(link => {
-                    link.addEventListener('click', function(e) {
-                        e.preventDefault();
-                        window.location.href = this.getAttribute('href');
-                    });
-                });
-            } else {
-                console.log('HTMX initialized successfully');
-            }
         });
         
-        // HTMX Event Handlers
+        // HTMX Event Handlers - Clean and Simple
         document.addEventListener('htmx:beforeRequest', function(event) {
-            const url = event.detail.elt.getAttribute('hx-get');
-            console.log('HTMX request starting for:', url);
+            const element = event.detail.elt;
+            const requestId = loadingManager.getRequestId();
             
-            // Show loading for navigation requests
-            if (url && (url.startsWith('/post/') || url.startsWith('/posts') || url.startsWith('/home'))) {
-                loadingState.currentRequest = url;
-                LoadingManager.show('htmx:beforeRequest');
+            // Store request ID on element for later reference
+            element.dataset.requestId = requestId;
+            
+            // Only show loading for navigation requests
+            const url = element.getAttribute('hx-get');
+            if (url && (url.startsWith('/') || url.includes('posts') || url.includes('home'))) {
+                loadingManager.startLoading(requestId);
             }
         });
-        
+
         document.addEventListener('htmx:afterRequest', function(event) {
-            const url = event.detail.elt.getAttribute('hx-get');
-            console.log('HTMX request completed for:', url, 'Status:', event.detail.xhr.status);
+            const element = event.detail.elt;
+            const requestId = element.dataset.requestId;
             
-            // Always hide loading after request completes
-            if (loadingState.isLoading) {
-                LoadingManager.hide('htmx:afterRequest');
+            if (requestId) {
+                loadingManager.stopLoading(requestId);
+                // Clean up the request ID
+                delete element.dataset.requestId;
             }
-            
-            // Handle newsletter subscription
-            if (event.detail.xhr.responseURL && event.detail.xhr.responseURL.includes('/newsletter')) {
-                if (event.detail.xhr.status === 200) {
-                    const form = event.target;
-                    form.innerHTML = '<p class="text-brand-orange font-bold text-lg">Thank you for subscribing!</p>';
-                    setTimeout(() => {
-                        location.reload();
-                    }, 2000);
+        });
+
+        // Handle various HTMX events that should stop loading
+        ['htmx:responseError', 'htmx:timeout', 'htmx:abort'].forEach(eventName => {
+            document.addEventListener(eventName, function(event) {
+                const element = event.detail.elt;
+                const requestId = element.dataset.requestId;
+                
+                if (requestId) {
+                    loadingManager.stopLoading(requestId);
+                    delete element.dataset.requestId;
                 }
-            }
+            });
         });
-        
-        // Handle HTMX errors
-        document.addEventListener('htmx:responseError', function(event) {
-            console.error('HTMX error:', event.detail);
-            LoadingManager.hide('htmx:responseError');
-        });
-        
-        // Handle request timeouts
-        document.addEventListener('htmx:timeout', function(event) {
-            console.error('HTMX timeout:', event.detail);
-            LoadingManager.hide('htmx:timeout');
-        });
-        
-        // Handle request aborts (like when navigating back)
-        document.addEventListener('htmx:abort', function(event) {
-            console.log('HTMX request aborted:', event.detail);
-            LoadingManager.hide('htmx:abort');
-        });
-        
+
         document.addEventListener('htmx:afterSwap', function(event) {
-            console.log('HTMX swap completed for:', event.detail.pathInfo.requestPath);
-            
-            // Ensure loading is hidden after swap
-            LoadingManager.hide('htmx:afterSwap');
-            
             // Scroll to top after page transition
             window.scrollTo({
                 top: 0,
@@ -421,24 +419,30 @@
             });
         });
         
-        // Handle browser navigation events
+        // Browser navigation handlers
         window.addEventListener('popstate', function(event) {
-            console.log('Browser back/forward navigation detected');
-            // Force hide loading when user navigates with browser buttons
-            LoadingManager.forceHide();
+            console.log('Browser navigation detected');
+            // Stop all loading on browser navigation
+            loadingManager.stopAllLoading();
         });
-        
-        // Handle page visibility changes (tab switching)
+
+        // Page visibility change handler
         document.addEventListener('visibilitychange', function() {
-            if (document.hidden) {
-                console.log('Page hidden, preserving loading state');
-            } else {
-                console.log('Page visible again');
-                // If page becomes visible and we're not actually loading, hide the loader
-                if (loadingState.isLoading && !loadingState.currentRequest) {
-                    LoadingManager.forceHide();
-                }
+            if (!document.hidden) {
+                console.log('Page became visible');
+                // If we have stuck loading states, clear them
+                setTimeout(() => {
+                    if (loadingManager.activeRequests.size > 0) {
+                        console.log('Clearing stuck loading states');
+                        loadingManager.stopAllLoading();
+                    }
+                }, 100);
             }
+        });
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', function() {
+            loadingManager.stopAllLoading();
         });
         
         // Smooth scrolling for anchor links
@@ -451,18 +455,6 @@
                 }
             });
         });
-        
-        // Additional safety net - check loading state every 5 seconds
-        setInterval(function() {
-            if (loadingState.isLoading) {
-                console.log('Periodic check: Loading state active for extended period');
-                // If loading has been active for more than 15 seconds, force hide
-                if (Date.now() - loadingState.startTime > 15000) {
-                    console.warn('Loading state stuck, force hiding');
-                    LoadingManager.forceHide();
-                }
-            }
-        }, 5000);
     </script>
 </body>
 </html>
