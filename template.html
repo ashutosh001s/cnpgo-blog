@@ -252,6 +252,48 @@
 
     <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
     <script>
+        // Loading state management
+        let loadingState = {
+            isLoading: false,
+            currentRequest: null,
+            loadingTimeout: null
+        };
+
+        // Utility functions for loading management
+        const LoadingManager = {
+            show: function(source = 'unknown') {
+                console.log('Loading shown by:', source);
+                loadingState.isLoading = true;
+                document.getElementById('global-loading').classList.add('active');
+                
+                // Set a timeout to force hide loading after 10 seconds
+                this.clearTimeout();
+                loadingState.loadingTimeout = setTimeout(() => {
+                    console.warn('Loading timeout reached, force hiding loader');
+                    this.hide('timeout');
+                }, 10000);
+            },
+            
+            hide: function(source = 'unknown') {
+                console.log('Loading hidden by:', source);
+                loadingState.isLoading = false;
+                document.getElementById('global-loading').classList.remove('active');
+                this.clearTimeout();
+            },
+            
+            clearTimeout: function() {
+                if (loadingState.loadingTimeout) {
+                    clearTimeout(loadingState.loadingTimeout);
+                    loadingState.loadingTimeout = null;
+                }
+            },
+            
+            forceHide: function() {
+                console.log('Force hiding loader');
+                this.hide('force');
+            }
+        };
+
         // Mobile menu functionality
         document.addEventListener('DOMContentLoaded', function() {
             const mobileMenuButton = document.getElementById('mobile-menu-button');
@@ -300,12 +342,8 @@
                     toggleMobileMenu();
                 }
             });
-        });
-        
-        // HTMX loading indicators
-        document.addEventListener('DOMContentLoaded', function() {
-            const globalLoading = document.getElementById('global-loading');
             
+            // HTMX fallback
             if (!window.htmx) {
                 console.error('HTMX not initialized, falling back to full page load');
                 document.querySelectorAll('a[hx-get]').forEach(link => {
@@ -319,23 +357,26 @@
             }
         });
         
-        // Show global loading indicator for post navigation
+        // HTMX Event Handlers
         document.addEventListener('htmx:beforeRequest', function(event) {
-            console.log('HTMX request started for:', event.detail.elt.getAttribute('hx-get'));
-            
-            // Show global loading for post requests
             const url = event.detail.elt.getAttribute('hx-get');
+            console.log('HTMX request starting for:', url);
+            
+            // Show loading for navigation requests
             if (url && (url.startsWith('/post/') || url.startsWith('/posts') || url.startsWith('/home'))) {
-                document.getElementById('global-loading').classList.add('active');
+                loadingState.currentRequest = url;
+                LoadingManager.show('htmx:beforeRequest');
             }
         });
         
-        // Hide global loading indicator
         document.addEventListener('htmx:afterRequest', function(event) {
-            console.log('HTMX request completed for:', event.detail.elt.getAttribute('hx-get'), 'Status:', event.detail.xhr.status);
+            const url = event.detail.elt.getAttribute('hx-get');
+            console.log('HTMX request completed for:', url, 'Status:', event.detail.xhr.status);
             
-            // Hide global loading
-            document.getElementById('global-loading').classList.remove('active');
+            // Always hide loading after request completes
+            if (loadingState.isLoading) {
+                LoadingManager.hide('htmx:afterRequest');
+            }
             
             // Handle newsletter subscription
             if (event.detail.xhr.responseURL && event.detail.xhr.responseURL.includes('/newsletter')) {
@@ -352,17 +393,52 @@
         // Handle HTMX errors
         document.addEventListener('htmx:responseError', function(event) {
             console.error('HTMX error:', event.detail);
-            document.getElementById('global-loading').classList.remove('active');
+            LoadingManager.hide('htmx:responseError');
+        });
+        
+        // Handle request timeouts
+        document.addEventListener('htmx:timeout', function(event) {
+            console.error('HTMX timeout:', event.detail);
+            LoadingManager.hide('htmx:timeout');
+        });
+        
+        // Handle request aborts (like when navigating back)
+        document.addEventListener('htmx:abort', function(event) {
+            console.log('HTMX request aborted:', event.detail);
+            LoadingManager.hide('htmx:abort');
         });
         
         document.addEventListener('htmx:afterSwap', function(event) {
             console.log('HTMX swap completed for:', event.detail.pathInfo.requestPath);
+            
+            // Ensure loading is hidden after swap
+            LoadingManager.hide('htmx:afterSwap');
             
             // Scroll to top after page transition
             window.scrollTo({
                 top: 0,
                 behavior: 'smooth'
             });
+        });
+        
+        // Handle browser navigation events
+        window.addEventListener('popstate', function(event) {
+            console.log('Browser back/forward navigation detected');
+            // Force hide loading when user navigates with browser buttons
+            LoadingManager.forceHide();
+        });
+        
+        // Handle page visibility changes (tab switching)
+        document.addEventListener('visibilitychange', function() {
+            if (document.hidden) {
+                console.log('Page hidden, preserving loading state');
+            } else {
+                console.log('Page visible again');
+                // If page becomes visible and we're not actually loading, hide the loader
+                if (loadingState.isLoading && !loadingState.currentRequest) {
+                    LoadingManager.forceHide();
+                }
+            }
         });
         
         // Smooth scrolling for anchor links
@@ -375,6 +451,18 @@
                 }
             });
         });
+        
+        // Additional safety net - check loading state every 5 seconds
+        setInterval(function() {
+            if (loadingState.isLoading) {
+                console.log('Periodic check: Loading state active for extended period');
+                // If loading has been active for more than 15 seconds, force hide
+                if (Date.now() - loadingState.startTime > 15000) {
+                    console.warn('Loading state stuck, force hiding');
+                    LoadingManager.forceHide();
+                }
+            }
+        }, 5000);
     </script>
 </body>
 </html>
