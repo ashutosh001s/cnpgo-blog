@@ -54,19 +54,66 @@ func loadPosts() error {
 	return nil
 }
 
-// loadTemplate loads the HTML template
-func loadTemplate() error {
-	var err error
-	tmpl, err = template.ParseFiles("template.html")
-	if err != nil {
-		log.Printf("Error loading template.html: %v", err)
-		return err
+// loadTemplates loads all HTML templates
+func loadTemplates() error {
+	// var err error
+	// Define template files with their desired names
+	templateFiles := []struct {
+		path string
+		name string
+	}{
+		{path: "templates/layouts/base.html", name: "base.html"},
+		{path: "templates/partials/post_image.html", name: "post_image"},
+		{path: "templates/partials/tag_links.html", name: "tag_links"},
+		{path: "templates/partials/error.html", name: "error"},
+		{path: "templates/partials/not_found.html", name: "not_found"},
+		{path: "templates/partials/newsletter_response.html", name: "newsletter_response"},
+		{path: "templates/partials/post_card.html", name: "post_card"},
+		{path: "templates/partials/meta_data.html", name: "meta_data"},
+		{path: "templates/home.html", name: "home.html"},
+		{path: "templates/posts.html", name: "posts.html"},
+		{path: "templates/post.html", name: "post.html"},
 	}
+
+	// Create a new template set
+	tmpl = template.New("")
+
+	// Load each template file with a specific name
+	for _, tf := range templateFiles {
+		t, err := template.ParseFiles(tf.path)
+		if err != nil {
+			log.Printf("Error loading template %s: %v", tf.path, err)
+			return err
+		}
+		// Rename the template to the desired name
+		tmpl = tmpl.New(tf.name)
+		_, err = tmpl.Parse(string(t.Templates()[0].Tree.Root.String()))
+		if err != nil {
+			log.Printf("Error parsing template %s as %s: %v", tf.path, tf.name, err)
+			return err
+		}
+		log.Printf("Successfully loaded template: %s as %s", tf.path, tf.name)
+	}
+
 	return nil
 }
 
-// generatePostImage generates the HTML for a post's image banner
-func generatePostImage(post Post) string {
+// renderTemplate executes a template with the given data and returns the HTML
+
+func renderTemplate(tmpl *template.Template, name string, data interface{}) (string, error) {
+	var buf strings.Builder
+	if err := tmpl.ExecuteTemplate(&buf, name, data); err != nil {
+		log.Printf("Error executing template %s: %v", name, err)
+		// Use error.html as fallback
+		if err := tmpl.ExecuteTemplate(&buf, "error", nil); err != nil {
+			return "", err
+		}
+	}
+	return buf.String(), nil
+}
+
+// getPostImageData prepares data for the post_image.html
+func getPostImageData(post Post) map[string]string {
 	icons := map[string]string{
 		"game-loop":             "🎮",
 		"game-engine":           "⚙️",
@@ -98,64 +145,26 @@ func generatePostImage(post Post) string {
 	if len(title) > 50 {
 		title = title[:50] + "..."
 	}
-	return fmt.Sprintf(`
-		<div class="bg-brand-gradient h-48 flex items-center justify-center flex-col text-white text-center rounded-t-xl relative overflow-hidden">
-			<div class="absolute inset-0 bg-dots-pattern bg-repeat animate-float-dots opacity-30"></div>
-			<div class="text-5xl mb-3 z-10">%s</div>
-			<div class="text-sm font-semibold text-shadow z-10 max-w-full px-4 leading-tight">%s</div>
-		</div>
-	`, icon, template.HTMLEscapeString(title))
+	return map[string]string{
+		"Icon":  icon,
+		"Title": template.HTMLEscapeString(title),
+	}
 }
 
-// getHomeContent generates the home page content
-func getHomeContent() string {
-	return `
-		<section class="bg-brand-gradient text-white py-20 relative overflow-hidden">
-			<div class="absolute inset-0 bg-hero-pattern animate-float opacity-30"></div>
-			<div class="container mx-auto px-5 text-center relative z-10">
-				<div class="max-w-4xl mx-auto">
-					<h1 class="text-5xl md:text-6xl font-bold mb-6 text-shadow-lg">CodeNPixel</h1>
-					<p class="text-xl md:text-2xl mb-8 opacity-90">Dive into Game Development & Graphics Programming</p>
-					<a href="/posts" class="bg-white text-brand-orange px-8 py-4 rounded-full font-bold text-lg hover:bg-gray-100 transition-all duration-300 transform hover:-translate-y-1 hover:shadow-2xl shadow-lg cursor-pointer"
-					   hx-get="/posts" hx-target="#main-content" hx-push-url="/posts">
-						Explore Posts
-					</a>
-				</div>
-			</div>
-		</section>
-		<section class="bg-gradient-to-r from-white to-orange-50 py-16 border-t-4 border-brand-orange">
-			<div class="container mx-auto px-5 text-center">
-				<h2 class="text-4xl font-bold text-brand-orange mb-4">Stay Updated</h2>
-				<p class="text-gray-600 mb-8 text-lg max-w-2xl mx-auto">
-					Get the latest insights on Unreal Engine, OpenGL, and game development straight to your inbox
-				</p>
-				<form class="flex flex-col sm:flex-row max-w-md mx-auto gap-3" hx-post="/newsletter" hx-swap="outerHTML">
-					<input type="email" name="email" placeholder="Enter your email address" required
-						   class="flex-1 px-6 py-4 border-2 border-brand-orange rounded-full text-lg outline-none focus:ring-4 focus:ring-brand-orange/30 transition-all duration-300">
-					<button type="submit" 
-							class="bg-brand-orange text-white px-8 py-4 rounded-full font-bold text-lg hover:bg-brand-orange-dark transition-all duration-300 transform hover:-translate-y-1">
-						Subscribe
-					</button>
-				</form>
-			</div>
-		</section>
-		<section class="py-20 bg-white" id="posts">
-			<div class="container mx-auto px-5">
-				<h2 class="text-4xl font-bold text-center text-brand-orange mb-12">Latest Posts</h2>
-				<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8" 
-					 hx-get="/api/posts" hx-trigger="load" hx-swap="innerHTML">
-					<div class="htmx-indicator col-span-full text-center py-8">
-						<div class="inline-block w-12 h-12 border-4 border-brand-orange border-t-transparent rounded-full animate-spin mb-4"></div>
-						<p class="text-brand-orange font-semibold text-lg">Loading posts...</p>
-					</div>
-				</div>
-			</div>
-		</section>
-	`
+// getHomeData prepares data for the home.html
+func getHomeData() map[string]interface{} {
+	return map[string]interface{}{
+		"TITLE":       "CodeNPixel - Game Dev & Graphics Programming",
+		"DESCRIPTION": "Dive into game development and graphics programming with CodeNPixel. Learn Unreal Engine, OpenGL, and more through tutorials and insights.",
+		"KEYWORDS":    "game development, graphics programming, Unreal Engine, OpenGL, shaders, game design",
+		"OG_TYPE":     "website",
+		"URL":         "https://codenpixel.com",
+		"OG_IMAGE":    "https://codenpixel.com/public/images/logo.png",
+	}
 }
 
-// getPostsContent generates the posts page content with optional filtering
-func getPostsContent(filterType, filterValue string) string {
+// getPostsData prepares data for the posts.html
+func getPostsData(filterType, filterValue string) map[string]interface{} {
 	var filteredPosts []Post
 	if filterType == "tag" && filterValue != "" {
 		for _, post := range posts {
@@ -176,147 +185,63 @@ func getPostsContent(filterType, filterValue string) string {
 		filteredPosts = posts
 	}
 
-	var postsHTML strings.Builder
-	for _, post := range filteredPosts {
+	// Prepare post data with formatted date and tags
+	postsData := make([]map[string]interface{}, len(filteredPosts))
+	for i, post := range filteredPosts {
 		date, _ := time.Parse("2006-01-02", post.Date)
-		postsHTML.WriteString(fmt.Sprintf(`
-			<article class="bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100 hover:-translate-y-2 transform">
-				%s
-				<div class="p-6">
-					<h3 class="text-xl font-bold text-gray-800 mb-2 leading-tight">%s</h3>
-					<div class="text-gray-500 text-sm mb-4 flex items-center gap-2">
-						<span>%s</span>
-						<span>•</span>
-						<span>%s</span>
-					</div>
-					<p class="text-gray-600 leading-relaxed mb-4">%s</p>
-					<div class="flex flex-wrap gap-2 mb-4">
-						%s
-					</div>
-					<a href="/post/%s" class="inline-flex items-center text-brand-orange font-semibold hover:text-brand-orange-light transition-colors duration-200 cursor-pointer" 
-					   hx-get="/post/%s" hx-target="#main-content" hx-push-url="/post/%s">
-						Read More 
-						<svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-						</svg>
-					</a>
-				</div>
-			</article>
-		`,
-			generatePostImage(post),
-			template.HTMLEscapeString(post.Title),
-			date.Format("Jan 2, 2006"),
-			template.HTMLEscapeString(post.Author),
-			template.HTMLEscapeString(post.Description),
-			strings.Join(generateTagLinks(post.Tags), ""),
-			post.Slug, post.Slug, post.Slug,
-		))
+		postsData[i] = map[string]interface{}{
+			"Slug":          post.Slug,
+			"Title":         template.HTMLEscapeString(post.Title),
+			"Description":   template.HTMLEscapeString(post.Description),
+			"Author":        template.HTMLEscapeString(post.Author),
+			"FormattedDate": date.Format("Jan 2, 2006"),
+			"Tags":          post.Tags,
+			"Icon":          getPostImageData(post)["Icon"],
+		}
 	}
 
-	// Generate tag buttons
+	// Generate all tags
 	allTags := make(map[string]bool)
 	for _, post := range posts {
 		for _, tag := range post.Tags {
 			allTags[strings.ReplaceAll(tag, "\"", "")] = true
 		}
 	}
-	var tagButtons strings.Builder
+	tagList := make([]string, 0, len(allTags))
 	for tag := range allTags {
-		isActive := filterType == "tag" && filterValue == tag
-		class := "px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 cursor-pointer"
-		if isActive {
-			class += " bg-brand-gradient text-white shadow-md"
-		} else {
-			class += " bg-gray-100 text-gray-700 hover:bg-gray-200"
-		}
-		tagButtons.WriteString(fmt.Sprintf(`
-			<a href="/posts?filter=tag&value=%s" class="%s" 
-			   hx-get="/posts?filter=tag&value=%s" hx-target="#main-content" hx-push-url="/posts?filter=tag&value=%s">
-				#%s
-			</a>
-		`, tag, class, tag, tag, tag))
+		tagList = append(tagList, tag)
 	}
 
-	// Title and description based on filter
-	var title string
+	// Determine title and description
+	var title, description string
 	if filterType == "tag" && filterValue != "" {
-		title = fmt.Sprintf(`Posts tagged with "%s"`, filterValue)
+		title = fmt.Sprintf(`Posts tagged with "%s" - CodeNPixel`, filterValue)
+		description = fmt.Sprintf(`Explore posts tagged with "%s" on game development and graphics programming at CodeNPixel.`, filterValue)
 	} else if filterType == "category" && filterValue != "" {
-		title = fmt.Sprintf(`%s Posts`, filterValue)
+		title = fmt.Sprintf(`%s Posts - CodeNPixel`, filterValue)
+		description = fmt.Sprintf(`Explore %s posts on game development and graphics programming at CodeNPixel.`, filterValue)
 	} else {
-		title = "All Posts"
+		title = "All Posts - CodeNPixel"
+		description = "Explore all posts on game development and graphics programming at CodeNPixel."
 	}
 
-	// Construct the final HTML
-	html := fmt.Sprintf(`
-		<div class="min-h-screen bg-gradient-to-br from-white to-orange-50 py-8">
-			<div class="container mx-auto px-5">
-				<div class="text-center mb-12">
-					<h1 class="text-4xl md:text-5xl font-bold text-gray-800 mb-4">%s</h1>
-					<p class="text-gray-600 text-lg max-w-2xl mx-auto">
-						Explore our collection of game development and graphics programming articles
-					</p>
-				</div>
-				<div class="mb-8">
-					<div class="flex flex-wrap justify-center gap-3 mb-6">
-						<a href="/posts" class="px-6 py-3 rounded-full font-semibold transition-all duration-200 cursor-pointer %s" 
-						   hx-get="/posts" hx-target="#main-content" hx-push-url="/posts">
-							All Posts
-						</a>
-					</div>
-					<div class="text-center mb-4">
-						<span class="text-gray-600 font-medium">Filter by tags:</span>
-					</div>
-					<div class="flex flex-wrap justify-center gap-2">
-						%s
-					</div>
-				</div>
-				<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-					%s
-				</div>
-				%s
-			</div>
-		</div>
-	`,
-		template.HTMLEscapeString(title),
-		ifThen(filterType == "all", "bg-brand-gradient text-white shadow-lg", "bg-white text-gray-700 hover:bg-gray-50 border border-gray-200"),
-		tagButtons.String(),
-		postsHTML.String(),
-		ifThen(len(filteredPosts) == 0, `
-			<div class="text-center py-16">
-				<div class="text-6xl mb-4">📝</div>
-				<h3 class="text-xl font-semibold text-gray-700 mb-2">No posts found</h3>
-				<p class="text-gray-500 mb-6">Try adjusting your filter or browse all posts</p>
-				<a href="/posts" class="bg-brand-gradient text-white px-6 py-3 rounded-full font-semibold hover:shadow-lg transition-all duration-200" 
-				   hx-get="/posts" hx-target="#main-content" hx-push-url="/posts">
-					View All Posts
-				</a>
-			</div>
-		`, ""),
-	)
-	return html
-}
-
-// generateTagLinks generates HTML for post tags
-func generateTagLinks(tags []string) []string {
-	var links []string
-	for _, tag := range tags {
-		cleanTag := strings.ReplaceAll(tag, "\"", "")
-		links = append(links, fmt.Sprintf(`
-			<a href="/posts?filter=tag&value=%s" 
-			   class="bg-brand-gradient text-white px-3 py-1 rounded-full text-xs font-medium cursor-pointer hover:scale-105 transition-transform duration-200" 
-			   hx-get="/posts?filter=tag&value=%s" 
-			   hx-target="#main-content" 
-			   hx-push-url="/posts?filter=tag&value=%s">
-				#%s
-			</a>
-		`, cleanTag, cleanTag, cleanTag, cleanTag))
+	return map[string]interface{}{
+		"Posts":       postsData,
+		"Title":       template.HTMLEscapeString(title),
+		"FilterType":  filterType,
+		"FilterValue": filterValue,
+		"AllTags":     tagList,
+		"TITLE":       title,
+		"DESCRIPTION": description,
+		"KEYWORDS":    strings.Join(tagList, ", "),
+		"OG_TYPE":     "website",
+		"URL":         fmt.Sprintf("https://codenpixel.com/posts?filter=%s&value=%s", filterType, filterValue),
+		"OG_IMAGE":    "https://codenpixel.com/public/images/logo.png",
 	}
-	return links
 }
 
-// getPostContent generates the content for a single post
-func getPostContent(slug string) (string, *Post, error) {
+// getPostData prepares data for the post.html
+func getPostData(slug string) (map[string]interface{}, *Post, error) {
 	var post *Post
 	for _, p := range posts {
 		if p.Slug == slug {
@@ -325,7 +250,14 @@ func getPostContent(slug string) (string, *Post, error) {
 		}
 	}
 	if post == nil {
-		return "", nil, fmt.Errorf("post not found")
+		return map[string]interface{}{
+			"TITLE":       "Post Not Found - CodeNPixel",
+			"DESCRIPTION": "The requested post was not found.",
+			"KEYWORDS":    "game development, graphics programming",
+			"OG_TYPE":     "website",
+			"URL":         fmt.Sprintf("https://codenpixel.com/post/%s", slug),
+			"OG_IMAGE":    "https://codenpixel.com/public/images/logo.png",
+		}, nil, fmt.Errorf("post not found")
 	}
 
 	content := post.Description
@@ -343,100 +275,23 @@ func getPostContent(slug string) (string, *Post, error) {
 		}
 	}
 
-	icons := map[string]string{
-		"game-loop":             "🎮",
-		"game-engine":           "⚙️",
-		"architecture":          "🏗️",
-		"performance":           "⚡",
-		"real-time":             "⏱️",
-		"opengl":                "🖥️",
-		"graphics-programming":  "🎨",
-		"shaders":               "✨",
-		"rendering":             "🎭",
-		"gpu":                   "💻",
-		"procedural-generation": "🌍",
-		"algorithms":            "🧮",
-		"world-building":        "🏔️",
-		"noise-functions":       "🌊",
-		"game-design":           "🎯",
-		"unreal-engine":         "🚀",
-		"nanite":                "💎",
-		"graphics":              "🎪",
-		"game-development":      "🎲",
-		"3d-rendering":          "🎬",
-	}
-	primaryTag := strings.ToLower(strings.ReplaceAll(post.Tags[0], "\"", ""))
-	icon := icons[primaryTag]
-	if icon == "" {
-		icon = "🔥"
-	}
-
 	date, _ := time.Parse("2006-01-02", post.Date)
-	html := fmt.Sprintf(`
-		<div class="min-h-screen bg-gradient-to-br from-white to-orange-50 py-8">
-			<div class="container mx-auto px-5">
-				<div class="max-w-6xl mx-auto">
-					<a href="/posts" 
-					   class="inline-flex items-center text-brand-orange font-semibold hover:text-brand-orange-light transition-colors duration-200 mb-8 cursor-pointer" 
-					   hx-get="/posts" hx-target="#main-content" hx-push-url="/posts">
-						<svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
-						</svg>
-						Back to Posts
-					</a>
-					<div class="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100">
-						<div class="h-64 bg-brand-gradient relative overflow-hidden">
-							<div class="absolute inset-0 bg-dots-pattern bg-repeat animate-float-dots opacity-30"></div>
-							<div class="absolute inset-0 flex items-center justify-center">
-								<div class="text-center text-white z-10">
-									<div class="text-6xl mb-4">%s</div>
-									<h1 class="text-2xl md:text-3xl font-bold text-shadow px-6">%s</h1>
-								</div>
-							</div>
-						</div>
-						<div class="p-8 md:p-12">
-							<div class="flex flex-wrap items-center gap-4 mb-8 pb-6 border-b border-gray-200">
-								<div class="flex items-center text-gray-600">
-									<svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
-									</svg>
-									<span class="font-medium">%s</span>
-								</div>
-								<div class="flex items-center text-gray-600">
-									<svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-									</svg>
-									<span>%s</span>
-								</div>
-							</div>
-							<div class="flex flex-wrap gap-2 mb-8">
-								%s
-							</div>
-							<div class="prose prose-lg max-w-none text-gray-700 leading-relaxed">
-								%s
-							</div>
-						</div>
-					</div>
-				</div>
-			</div>
-		</div>
-	`,
-		icon,
-		template.HTMLEscapeString(post.Title),
-		template.HTMLEscapeString(post.Author),
-		date.Format("Jan 2, 2006"),
-		strings.Join(generateTagLinks(post.Tags), ""),
-		content,
-	)
-	return html, post, nil
-}
-
-// ifThen is a helper for conditional strings
-func ifThen(condition bool, trueVal, falseVal string) string {
-	if condition {
-		return trueVal
-	}
-	return falseVal
+	return map[string]interface{}{
+		"Slug":          post.Slug,
+		"Title":         template.HTMLEscapeString(post.Title),
+		"Description":   template.HTMLEscapeString(post.Description),
+		"Author":        template.HTMLEscapeString(post.Author),
+		"FormattedDate": date.Format("Jan 2, 2006"),
+		"Tags":          post.Tags,
+		"Content":       template.HTML(content), // Changed: Use template.HTML to prevent escaping
+		"Icon":          getPostImageData(*post)["Icon"],
+		"TITLE":         fmt.Sprintf("%s - CodeNPixel", post.Title),
+		"DESCRIPTION":   post.Description,
+		"KEYWORDS":      strings.Join(post.Tags, ", "),
+		"OG_TYPE":       "article",
+		"URL":           fmt.Sprintf("https://codenpixel.com/post/%s", post.Slug),
+		"OG_IMAGE":      "https://codenpixel.com/public/images/logo.png",
+	}, post, nil
 }
 
 func main() {
@@ -451,11 +306,11 @@ func main() {
 		log.Fatal(err)
 	}
 
-	// Load posts and template
+	// Load posts and templates
 	if err := loadPosts(); err != nil {
 		log.Fatal(err)
 	}
-	if err := loadTemplate(); err != nil {
+	if err := loadTemplates(); err != nil {
 		log.Fatal(err)
 	}
 
@@ -473,131 +328,171 @@ func main() {
 	// Routes
 	r.GET("/", func(c *gin.Context) {
 		_, isHXRequest := c.Get("isHXRequest")
-		content := getHomeContent()
+
 		if isHXRequest {
+			content, err := renderTemplate(tmpl, "home.html", getHomeData())
+			if err != nil {
+				log.Printf("Error rendering home template: %v", err)
+				content, _ := renderTemplate(tmpl, "error", nil)
+				c.Data(http.StatusInternalServerError, "text/html; charset=utf-8", []byte(content))
+				return
+			}
 			c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(content))
 			return
 		}
-		data := gin.H{
-			"CONTENT":     template.HTML(content),
-			"TITLE":       "CodeNPixel - Game Dev & Graphics Programming",
-			"DESCRIPTION": "Dive into game development and graphics programming with CodeNPixel. Learn Unreal Engine, OpenGL, and more through tutorials and insights.",
-		}
-		if tmpl == nil {
-			log.Println("Template is nil")
-			c.Data(http.StatusInternalServerError, "text/html; charset=utf-8", []byte(`<div class="text-center py-16"><h1 class="text-3xl font-bold text-gray-800">Error: Template not loaded</h1></div>`))
+
+		// For non-HTMX requests, render the full page
+		homeContent, err := renderTemplate(tmpl, "home.html", getHomeData())
+		if err != nil {
+			log.Printf("Error rendering home template: %v", err)
+			content, _ := renderTemplate(tmpl, "error", nil)
+			data := gin.H{
+				"CONTENT":     template.HTML(content),
+				"TITLE":       "Error - CodeNPixel",
+				"DESCRIPTION": "An error occurred on the server.",
+				"KEYWORDS":    "game development, graphics programming",
+				"OG_TYPE":     "website",
+				"URL":         "https://codenpixel.com",
+				"OG_IMAGE":    "https://codenpixel.com/public/images/logo.png",
+			}
+			tmpl.ExecuteTemplate(c.Writer, "base.html", data)
 			return
 		}
-		if err := tmpl.ExecuteTemplate(c.Writer, "template.html", data); err != nil {
-			log.Printf("Error rendering template: %v", err)
-			c.Data(http.StatusInternalServerError, "text/html; charset=utf-8", []byte(`<div class="text-center py-16"><h1 class="text-3xl font-bold text-gray-800">Error loading page</h1></div>`))
-			return
+
+		// Create data for base template with home content
+		data := getHomeData()
+		data["CONTENT"] = template.HTML(homeContent)
+
+		if err := tmpl.ExecuteTemplate(c.Writer, "base.html", data); err != nil {
+			log.Printf("Error rendering base template: %v", err)
+			content, _ := renderTemplate(tmpl, "error", nil)
+			c.Data(http.StatusInternalServerError, "text/html; charset=utf-8", []byte(content))
 		}
 	})
 
+	// Update your /posts route
 	r.GET("/posts", func(c *gin.Context) {
 		_, isHXRequest := c.Get("isHXRequest")
 		filter := c.DefaultQuery("filter", "all")
 		value := c.Query("value")
-		content := getPostsContent(filter, value)
+		data := getPostsData(filter, value)
 
-		var title, description string
-		if filter == "tag" && value != "" {
-			title = fmt.Sprintf(`Posts tagged with "%s" - CodeNPixel`, value)
-			description = fmt.Sprintf(`Explore posts tagged with "%s" on game development and graphics programming at CodeNPixel.`, value)
-		} else if filter == "category" && value != "" {
-			title = fmt.Sprintf(`%s Posts - CodeNPixel`, value)
-			description = fmt.Sprintf(`Explore %s posts on game development and graphics programming at CodeNPixel.`, value)
-		} else {
-			title = "All Posts - CodeNPixel"
-			description = "Explore all posts on game development and graphics programming at CodeNPixel."
+		if isHXRequest {
+			setMetaHeaders(c, data)
+		}
+
+		content, err := renderTemplate(tmpl, "posts.html", data)
+		if err != nil {
+			log.Printf("Error rendering posts template: %v", err)
+			content, _ := renderTemplate(tmpl, "error", nil)
+			if isHXRequest {
+				c.Data(http.StatusInternalServerError, "text/html; charset=utf-8", []byte(content))
+				return
+			}
+			dataBase := gin.H{
+				"CONTENT":     template.HTML(content),
+				"TITLE":       "Error - CodeNPixel",
+				"DESCRIPTION": "An error occurred on the server.",
+				"KEYWORDS":    "game development, graphics programming",
+				"OG_TYPE":     "website",
+				"URL":         "https://codenpixel.com/posts",
+				"OG_IMAGE":    "https://codenpixel.com/public/images/logo.png",
+			}
+			tmpl.ExecuteTemplate(c.Writer, "base.html", dataBase)
+			return
 		}
 
 		if isHXRequest {
 			c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(content))
 			return
 		}
-		data := gin.H{
-			"CONTENT":     template.HTML(content),
-			"TITLE":       title,
-			"DESCRIPTION": description,
-		}
-		if tmpl == nil {
-			log.Println("Template is nil")
-			c.Data(http.StatusInternalServerError, "text/html; charset=utf-8", []byte(`<div class="text-center py-16"><h1 class="text-3xl font-bold text-gray-800">Error: Template not loaded</h1></div>`))
-			return
-		}
-		if err := tmpl.ExecuteTemplate(c.Writer, "template.html", data); err != nil {
-			log.Printf("Error rendering template: %v", err)
-			c.Data(http.StatusInternalServerError, "text/html; charset=utf-8", []byte(`<div class="text-center py-16"><h1 class="text-3xl font-bold text-gray-800">Error loading posts</h1></div>`))
-			return
+
+		// Fix: Add CONTENT field to data for non-HTMX requests
+		data["CONTENT"] = template.HTML(content)
+
+		if err := tmpl.ExecuteTemplate(c.Writer, "base.html", data); err != nil {
+			log.Printf("Error rendering base template: %v", err)
+			content, _ := renderTemplate(tmpl, "error", nil)
+			c.Data(http.StatusInternalServerError, "text/html; charset=utf-8", []byte(content))
 		}
 	})
 
+	// Update your /post/:slug route
 	r.GET("/post/:slug", func(c *gin.Context) {
 		_, isHXRequest := c.Get("isHXRequest")
 		slug := c.Param("slug")
-		content, post, err := getPostContent(slug)
+		data, post, err := getPostData(slug)
+
+		if isHXRequest && err == nil {
+			setMetaHeaders(c, data) // Add this line
+		}
+
 		if err != nil {
-			notFoundContent := `
-				<div class="min-h-screen bg-gradient-to-br from-white to-orange-50 py-8">
-					<div class="container mx-auto px-5">
-						<div class="text-center py-16">
-							<div class="text-6xl mb-4">📝</div>
-							<h1 class="text-3xl font-bold text-gray-800 mb-4">Post Not Found</h1>
-							<p class="text-gray-600 mb-8">The post you're looking for doesn't exist.</p>
-							<button class="bg-brand-gradient text-white px-6 py-3 rounded-full font-semibold hover:shadow-lg transition-all duration-200" 
-									hx-get="/posts" hx-target="#main-content" hx-push-url="/posts">
-								Browse All Posts
-							</button>
-						</div>
-					</div>
-				</div>
-			`
+			dataNotFound := map[string]interface{}{
+				"Icon":       "📝",
+				"Title":      "Post Not Found",
+				"Message":    "The post you're looking for doesn't exist.",
+				"ButtonText": "Browse All Posts",
+				"IsPost":     true,
+			}
+			content, err := renderTemplate(tmpl, "not_found", dataNotFound)
+			if err != nil {
+				log.Printf("Error rendering not found template: %v", err)
+				content, _ := renderTemplate(tmpl, "error", nil)
+				c.Data(http.StatusInternalServerError, "text/html; charset=utf-8", []byte(content))
+				return
+			}
 			if isHXRequest {
-				c.Data(http.StatusNotFound, "text/html; charset=utf-8", []byte(notFoundContent))
-			} else {
-				data := gin.H{
-					"CONTENT":     template.HTML(notFoundContent),
-					"TITLE":       "Post Not Found - CodeNPixel",
-					"DESCRIPTION": "The requested post was not found.",
-				}
-				if tmpl == nil {
-					log.Println("Template is nil")
-					c.Data(http.StatusInternalServerError, "text/html; charset=utf-8", []byte(`<div class="text-center py-16"><h1 class="text-3xl font-bold text-gray-800">Error: Template not loaded</h1></div>`))
-					return
-				}
-				if err := tmpl.ExecuteTemplate(c.Writer, "template.html", data); err != nil {
-					log.Printf("Error rendering template: %v", err)
-					c.Data(http.StatusInternalServerError, "text/html; charset=utf-8", []byte(`<div class="text-center py-16"><h1 class="text-3xl font-bold text-gray-800">Error loading page</h1></div>`))
-				}
+				c.Data(http.StatusNotFound, "text/html; charset=utf-8", []byte(content))
+				return
+			}
+			dataBase := gin.H{
+				"CONTENT":     template.HTML(content),
+				"TITLE":       "Post Not Found - CodeNPixel",
+				"DESCRIPTION": "The requested post was not found.",
+			}
+			if err := tmpl.ExecuteTemplate(c.Writer, "base.html", dataBase); err != nil {
+				log.Printf("Error rendering base template: %v", err)
+				content, _ := renderTemplate(tmpl, "error", nil)
+				c.Data(http.StatusInternalServerError, "text/html; charset=utf-8", []byte(content))
 			}
 			return
 		}
 
+		content, err := renderTemplate(tmpl, "post.html", data)
+		if err != nil {
+			log.Printf("Error rendering post template: %v", err)
+			content, _ := renderTemplate(tmpl, "error", nil)
+			c.Data(http.StatusInternalServerError, "text/html; charset=utf-8", []byte(content))
+			return
+		}
 		if isHXRequest {
 			c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(content))
 			return
 		}
-		data := gin.H{
+		dataBase := gin.H{
 			"CONTENT":     template.HTML(content),
 			"TITLE":       fmt.Sprintf("%s - CodeNPixel", post.Title),
 			"DESCRIPTION": post.Description,
 		}
-		if tmpl == nil {
-			log.Println("Template is nil")
-			c.Data(http.StatusInternalServerError, "text/html; charset=utf-8", []byte(`<div class="text-center py-16"><h1 class="text-3xl font-bold text-gray-800">Error: Template not loaded</h1></div>`))
-			return
-		}
-		if err := tmpl.ExecuteTemplate(c.Writer, "template.html", data); err != nil {
-			log.Printf("Error rendering template: %v", err)
-			c.Data(http.StatusInternalServerError, "text/html; charset=utf-8", []byte(`<div class="text-center py-16"><h1 class="text-3xl font-bold text-gray-800">Error loading post</h1></div>`))
-			return
+		if err := tmpl.ExecuteTemplate(c.Writer, "base.html", dataBase); err != nil {
+			log.Printf("Error rendering base template: %v", err)
+			content, _ := renderTemplate(tmpl, "error", nil)
+			c.Data(http.StatusInternalServerError, "text/html; charset=utf-8", []byte(content))
 		}
 	})
 
 	r.GET("/home", func(c *gin.Context) {
-		content := getHomeContent()
+		data := getHomeData()
+		setMetaHeaders(c, data) // Add this line
+
+		content, err := renderTemplate(tmpl, "home.html", data)
+		if err != nil {
+			log.Printf("Error rendering home template: %v", err)
+			content, _ := renderTemplate(tmpl, "error", nil)
+			c.Data(http.StatusInternalServerError, "text/html; charset=utf-8", []byte(content))
+			return
+		}
 		c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(content))
 	})
 
@@ -611,41 +506,30 @@ func main() {
 		}
 		recentPosts := posts[:limit]
 
-		var postsHTML strings.Builder
-		for _, post := range recentPosts {
+		// Prepare post data for rendering
+		postsData := make([]map[string]interface{}, len(recentPosts))
+		for i, post := range recentPosts {
 			date, _ := time.Parse("2006-01-02", post.Date)
-			postsHTML.WriteString(fmt.Sprintf(`
-				<article class="bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100 hover:-translate-y-2 transform">
-					%s
-					<div class="p-6">
-						<h3 class="text-xl font-bold text-gray-800 mb-2 leading-tight">%s</h3>
-						<div class="text-gray-500 text-sm mb-4 flex items-center gap-2">
-							<span>%s</span>
-							<span>•</span>
-							<span>%s</span>
-						</div>
-						<p class="text-gray-600 leading-relaxed mb-4">%s</p>
-						<div class="flex flex-wrap gap-2 mb-4">
-							%s
-						</div>
-						<a href="/post/%s" class="inline-flex items-center text-brand-orange font-semibold hover:text-brand-orange-light transition-colors duration-200 cursor-pointer" 
-						   hx-get="/post/%s" hx-target="#main-content" hx-push-url="/post/%s">
-							Read More 
-							<svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-							</svg>
-						</a>
-					</div>
-				</article>
-			`,
-				generatePostImage(post),
-				template.HTMLEscapeString(post.Title),
-				date.Format("Jan 2, 2006"),
-				template.HTMLEscapeString(post.Author),
-				template.HTMLEscapeString(post.Description),
-				strings.Join(generateTagLinks(post.Tags), ""),
-				post.Slug, post.Slug, post.Slug,
-			))
+			postsData[i] = map[string]interface{}{
+				"Slug":          post.Slug,
+				"Title":         template.HTMLEscapeString(post.Title),
+				"Description":   template.HTMLEscapeString(post.Description),
+				"Author":        template.HTMLEscapeString(post.Author),
+				"FormattedDate": date.Format("Jan 2, 2006"),
+				"Tags":          post.Tags,
+				"Icon":          getPostImageData(post)["Icon"],
+			}
+		}
+
+		// Render only the post cards
+		var postsHTML strings.Builder
+		for _, postData := range postsData {
+			if err := tmpl.ExecuteTemplate(&postsHTML, "post_card", postData); err != nil {
+				log.Printf("Error rendering post_card template: %v", err)
+				content, _ := renderTemplate(tmpl, "error", nil)
+				c.Data(http.StatusInternalServerError, "text/html; charset=utf-8", []byte(content))
+				return
+			}
 		}
 		c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(postsHTML.String()))
 	})
@@ -655,18 +539,48 @@ func main() {
 			Email string `form:"email"`
 		}
 		if err := c.ShouldBind(&body); err != nil || body.Email == "" || !strings.Contains(body.Email, "@") {
-			c.Data(http.StatusBadRequest, "text/html; charset=utf-8", []byte(`<p class="text-red-500 font-semibold">Please enter a valid email address</p>`))
+			content, err := renderTemplate(tmpl, "newsletter_response", map[string]string{
+				"Class":   "text-red-500 font-semibold",
+				"Message": "Please enter a valid email address",
+			})
+			if err != nil {
+				log.Printf("Error rendering newsletter response template: %v", err)
+				content, _ := renderTemplate(tmpl, "error", nil)
+				c.Data(http.StatusInternalServerError, "text/html; charset=utf-8", []byte(content))
+				return
+			}
+			c.Data(http.StatusBadRequest, "text/html; charset=utf-8", []byte(content))
 			return
 		}
 		for _, sub := range subscribers {
 			if sub == body.Email {
-				c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(`<p class="text-orange-500 font-semibold">You are already subscribed!</p>`))
+				content, err := renderTemplate(tmpl, "newsletter_response", map[string]string{
+					"Class":   "text-orange-500 font-semibold",
+					"Message": "You are already subscribed!",
+				})
+				if err != nil {
+					log.Printf("Error rendering newsletter response template: %v", err)
+					content, _ := renderTemplate(tmpl, "error", nil)
+					c.Data(http.StatusInternalServerError, "text/html; charset=utf-8", []byte(content))
+					return
+				}
+				c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(content))
 				return
 			}
 		}
 		subscribers = append(subscribers, body.Email)
 		log.Printf("New subscriber: %s", body.Email)
-		c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(`<p class="text-brand-orange font-bold text-lg">Thank you for subscribing!</p>`))
+		content, err := renderTemplate(tmpl, "newsletter_response", map[string]string{
+			"Class":   "text-brand-orange font-bold text-lg",
+			"Message": "Thank you for subscribing!",
+		})
+		if err != nil {
+			log.Printf("Error rendering newsletter response template: %v", err)
+			content, _ := renderTemplate(tmpl, "error", nil)
+			c.Data(http.StatusInternalServerError, "text/html; charset=utf-8", []byte(content))
+			return
+		}
+		c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(content))
 	})
 
 	r.GET("/api/posts/json", func(c *gin.Context) {
@@ -688,38 +602,28 @@ func main() {
 	r.Use(func(c *gin.Context) {
 		c.Next()
 		if len(c.Errors) > 0 {
-			errorContent := `
-				<div class="min-h-screen bg-gradient-to-br from-white to-orange-50 py-8">
-					<div class="container mx-auto px-5">
-						<div class="text-center py-16">
-							<div class="text-6xl mb-4">⚠️</div>
-							<h1 class="text-3xl font-bold text-gray-800 mb-4">Something went wrong!</h1>
-							<p class="text-gray-600 mb-8">Please try again later.</p>
-							<button class="bg-brand-gradient text-white px-6 py-3 rounded-full font-semibold hover:shadow-lg transition-all duration-200" 
-									onclick="window.location.href='/'">
-								Go Home
-							</button>
-						</div>
-					</div>
-				</div>
-			`
+			content, err := renderTemplate(tmpl, "error", nil)
+			if err != nil {
+				log.Printf("Error rendering error template: %v", err)
+				c.Data(http.StatusInternalServerError, "text/html; charset=utf-8", []byte("<div class=\"text-center py-16\"><h1 class=\"text-3xl font-bold text-gray-800\">Error: Template not loaded</h1></div>"))
+				return
+			}
 			_, isHXRequest := c.Get("isHXRequest")
 			if isHXRequest {
-				c.Data(http.StatusInternalServerError, "text/html; charset=utf-8", []byte(errorContent))
+				c.Data(http.StatusInternalServerError, "text/html; charset=utf-8", []byte(content))
 			} else {
 				data := gin.H{
-					"CONTENT":     template.HTML(errorContent),
+					"CONTENT":     template.HTML(content),
 					"TITLE":       "Error - CodeNPixel",
 					"DESCRIPTION": "An error occurred on the server.",
+					"KEYWORDS":    "game development, graphics programming",
+					"OG_TYPE":     "website",
+					"URL":         "https://codenpixel.com",
+					"OG_IMAGE":    "https://codenpixel.com/public/images/logo.png",
 				}
-				if tmpl == nil {
-					log.Println("Template is nil")
-					c.Data(http.StatusInternalServerError, "text/html; charset=utf-8", []byte(`<div class="text-center py-16"><h1 class="text-3xl font-bold text-gray-800">Error: Template not loaded</h1></div>`))
-					return
-				}
-				if err := tmpl.ExecuteTemplate(c.Writer, "template.html", data); err != nil {
-					log.Printf("Error rendering template: %v", err)
-					c.Data(http.StatusInternalServerError, "text/html; charset=utf-8", []byte(`<div class="text-center py-16"><h1 class="text-3xl font-bold text-gray-800">Error loading page</h1></div>`))
+				if err := tmpl.ExecuteTemplate(c.Writer, "base.html", data); err != nil {
+					log.Printf("Error rendering base template: %v", err)
+					c.Data(http.StatusInternalServerError, "text/html; charset=utf-8", []byte("<div class=\"text-center py-16\"><h1 class=\"text-3xl font-bold text-gray-800\">Error loading page</h1></div>"))
 				}
 			}
 		}
@@ -727,38 +631,32 @@ func main() {
 
 	// 404 handler
 	r.NoRoute(func(c *gin.Context) {
-		notFoundContent := `
-			<div class="min-h-screen bg-gradient-to-br from-white to-orange-50 py-8">
-				<div class="container mx-auto px-5">
-					<div class="text-center py-16">
-						<div class="text-6xl mb-4">🔍</div>
-						<h1 class="text-3xl font-bold text-gray-800 mb-4">Page Not Found</h1>
-						<p class="text-gray-600 mb-8">The page you're looking for doesn't exist.</p>
-						<button class="bg-brand-gradient text-white px-6 py-3 rounded-full font-semibold hover:shadow-lg transition-all duration-200" 
-								onclick="window.location.href='/'">
-							Go Home
-						</button>
-					</div>
-				</div>
-			</div>
-		`
+		data := map[string]interface{}{
+			"Icon":        "🔍",
+			"Title":       "Page Not Found",
+			"Message":     "The page you're looking for doesn't exist.",
+			"ButtonText":  "Go Home",
+			"IsPost":      false,
+			"TITLE":       "Page Not Found - CodeNPixel",
+			"DESCRIPTION": "The requested page was not found.",
+			"KEYWORDS":    "game development, graphics programming",
+			"OG_TYPE":     "website",
+			"URL":         "https://codenpixel.com",
+			"OG_IMAGE":    "https://codenpixel.com/public/images/logo.png",
+		}
+		content, err := renderTemplate(tmpl, "not_found", data)
+		if err != nil {
+			log.Printf("Error rendering not found template: %v", err)
+			c.Data(http.StatusInternalServerError, "text/html; charset=utf-8", []byte("<div class=\"text-center py-16\"><h1 class=\"text-3xl font-bold text-gray-800\">Error: Template not loaded</h1></div>"))
+			return
+		}
 		_, isHXRequest := c.Get("isHXRequest")
 		if isHXRequest {
-			c.Data(http.StatusNotFound, "text/html; charset=utf-8", []byte(notFoundContent))
+			c.Data(http.StatusNotFound, "text/html; charset=utf-8", []byte(content))
 		} else {
-			data := gin.H{
-				"CONTENT":     template.HTML(notFoundContent),
-				"TITLE":       "Page Not Found - CodeNPixel",
-				"DESCRIPTION": "The requested page was not found.",
-			}
-			if tmpl == nil {
-				log.Println("Template is nil")
-				c.Data(http.StatusInternalServerError, "text/html; charset=utf-8", []byte(`<div class="text-center py-16"><h1 class="text-3xl font-bold text-gray-800">Error: Template not loaded</h1></div>`))
-				return
-			}
-			if err := tmpl.ExecuteTemplate(c.Writer, "template.html", data); err != nil {
-				log.Printf("Error rendering template: %v", err)
-				c.Data(http.StatusInternalServerError, "text/html; charset=utf-8", []byte(`<div class="text-center py-16"><h1 class="text-3xl font-bold text-gray-800">Error loading page</h1></div>`))
+			if err := tmpl.ExecuteTemplate(c.Writer, "base.html", data); err != nil {
+				log.Printf("Error rendering base template: %v", err)
+				c.Data(http.StatusInternalServerError, "text/html; charset=utf-8", []byte("<div class=\"text-center py-16\"><h1 class=\"text-3xl font-bold text-gray-800\">Error loading page</h1></div>"))
 			}
 		}
 	})
@@ -780,4 +678,24 @@ func main() {
 	if err := r.Run(":" + port); err != nil {
 		log.Fatal(err)
 	}
+}
+
+// setMetaHeaders sets the meta data headers for HTMX requests
+func setMetaHeaders(c *gin.Context, data map[string]interface{}) {
+	metaData := map[string]interface{}{
+		"TITLE":       data["TITLE"],
+		"DESCRIPTION": data["DESCRIPTION"],
+		"KEYWORDS":    data["KEYWORDS"],
+		"OG_TYPE":     data["OG_TYPE"],
+		"URL":         data["URL"],
+		"OG_IMAGE":    data["OG_IMAGE"],
+	}
+
+	metaJSON, err := json.Marshal(metaData)
+	if err != nil {
+		log.Printf("Error marshaling meta data: %v", err)
+		return
+	}
+
+	c.Header("X-Meta-Data", string(metaJSON))
 }

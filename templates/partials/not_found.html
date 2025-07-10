@@ -1,0 +1,13 @@
+<div class="min-h-screen bg-gradient-to-br from-white to-orange-50 py-8">
+    <div class="container mx-auto px-5">
+        <div class="text-center py-16">
+            <div class="text-6xl mb-4">{{.Icon}}</div>
+            <h1 class="text-3xl font-bold text-gray-800 mb-4">{{.Title}}</h1>
+            <p class="text-gray-600 mb-8">{{.Message}}</p>
+            <button class="bg-brand-gradient text-white px-6 py-3 rounded-full font-semibold hover:shadow-lg transition-all duration-200" 
+                    {{if .IsPost}}hx-get="/posts" hx-target="#main-content" hx-push-url="/posts"{{else}}onclick="window.location.href='/'"{{end}}>
+                {{.ButtonText}}
+            </button>
+        </div>
+    </div>
+</div>

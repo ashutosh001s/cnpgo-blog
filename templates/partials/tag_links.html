@@ -1,0 +1,10 @@
+{{range .Tags}}
+    {{ $cleanTag := . }}
+    <a href="/posts?filter=tag&value={{$cleanTag}}" 
+       class="bg-brand-gradient text-white px-3 py-1 rounded-full text-xs font-medium cursor-pointer hover:scale-105 transition-transform duration-200" 
+       hx-get="/posts?filter=tag&value={{$cleanTag}}" 
+       hx-target="#main-content" 
+       hx-push-url="/posts?filter=tag&value={{$cleanTag}}">
+        #{{$cleanTag}}
+    </a>
+{{end}}

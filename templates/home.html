@@ -1,0 +1,47 @@
+<section class="bg-brand-gradient text-white py-20 relative overflow-hidden">
+    <div class="absolute inset-0 bg-hero-pattern animate-float opacity-30"></div>
+    <div class="container mx-auto px-5 text-center relative z-10">
+        <div class="max-w-4xl mx-auto">
+            <h1 class="text-5xl md:text-6xl font-bold mb-6 text-shadow-lg">CodeNPixel</h1>
+            <p class="text-xl md:text-2xl mb-8 opacity-90">Dive into Game Development & Graphics Programming</p>
+            <a href="/posts" class="bg-white text-brand-orange px-8 py-4 rounded-full font-bold text-lg hover:bg-gray-100 transition-all duration-300 transform hover:-translate-y-1 hover:shadow-2xl shadow-lg cursor-pointer"
+               hx-get="/posts" hx-target="#main-content" hx-push-url="/posts">
+                Explore Posts
+            </a>
+        </div>
+    </div>
+</section>
+<section class="bg-gradient-to-r from-white to-orange-50 py-16 border-t-4 border-brand-orange">
+    <div class="container mx-auto px-5 text-center">
+        <h2 class="text-4xl font-bold text-brand-orange mb-4">Stay Updated</h2>
+        <p class="text-gray-600 mb-8 text-lg max-w-2xl mx-auto">
+            Get the latest insights on Unreal Engine, OpenGL, and game development straight to your inbox
+        </p>
+        <form class="flex flex-col sm:flex-row max-w-md mx-auto gap-3" hx-post="/newsletter" hx-swap="outerHTML">
+            <input type="email" name="email" placeholder="Enter your email address" required
+                   class="flex-1 px-6 py-4 border-2 border-brand-orange rounded-full text-lg outline-none focus:ring-4 focus:ring-brand-orange/30 transition-all duration-300">
+            <button type="submit" 
+                    class="bg-brand-orange text-white px-8 py-4 rounded-full font-bold text-lg hover:bg-brand-orange-dark transition-all duration-300 transform hover:-translate-y-1">
+                Subscribe
+            </button>
+        </form>
+    </div>
+</section>
+<section class="py-20 bg-white" id="posts">
+    <div class="container mx-auto px-5">
+        <h2 class="text-4xl font-bold text-center text-brand-orange mb-12">Latest Posts</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8" 
+             hx-get="/api/posts?limit=6" hx-trigger="load" hx-swap="innerHTML" id="latest-posts">
+            {{range $index, $post := .Posts}}
+                {{if lt $index 6}}
+                    {{template "post_card" $post}}
+                {{end}}
+            {{else}}
+                <div class="htmx-indicator col-span-full text-center py-8">
+                    <div class="inline-block w-12 h-12 border-4 border-brand-orange border-t-transparent rounded-full animate-spin mb-4"></div>
+                    <p class="text-brand-orange font-semibold text-lg">Loading posts...</p>
+                </div>
+            {{end}}
+        </div>
+    </div>
+</section>

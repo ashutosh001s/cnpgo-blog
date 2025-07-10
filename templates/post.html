@@ -1,0 +1,49 @@
+<div class="min-h-screen bg-gradient-to-br from-white to-orange-50 py-8">
+    <div class="container mx-auto px-5">
+        <div class="max-w-6xl mx-auto">
+            <a href="/posts" 
+               class="inline-flex items-center text-brand-orange font-semibold hover:text-brand-orange-light transition-colors duration-200 mb-8 cursor-pointer" 
+               hx-get="/posts" 
+               hx-target="#main-content" 
+               hx-push-url="/posts">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                </svg>
+                Back to Posts
+            </a>
+            <div class="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100">
+                <div class="h-64 bg-brand-gradient relative overflow-hidden">
+                    <div class="absolute inset-0 bg-dots-pattern bg-repeat animate-float-dots opacity-30"></div>
+                    <div class="absolute inset-0 flex items-center justify-center">
+                        <div class="text-center text-white z-10">
+                            <div class="text-6xl mb-4">{{.Icon}}</div>
+                            <h1 class="text-2xl md:text-3xl font-bold text-shadow px-6">{{.Title}}</h1>
+                        </div>
+                    </div>
+                </div>
+                <div class="p-8 md:p-12">
+                    <div class="flex flex-wrap items-center gap-4 mb-8 pb-6 border-b border-gray-200">
+                        <div class="flex items-center text-gray-600">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                            </svg>
+                            <span class="font-medium">{{.Author}}</span>
+                        </div>
+                        <div class="flex items-center text-gray-600">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                            </svg>
+                            <span>{{.FormattedDate}}</span>
+                        </div>
+                    </div>
+                    <div class="flex flex-wrap gap-2 mb-8">
+                        {{template "tag_links" .}}
+                    </div>
+                    <div class="prose prose-lg max-w-none text-gray-700 leading-relaxed">
+                        {{.Content}}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
