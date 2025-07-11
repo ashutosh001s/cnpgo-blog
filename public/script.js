@@ -3,10 +3,12 @@
             const loadingOverlay = document.getElementById('loading-overlay');
             
             function showLoading() {
+                loadingOverlay.classList.remove("hide");
                 loadingOverlay.classList.add('show');
             }
             
             function hideLoading() {
+                loadingOverlay.classList.add("hide");
                 loadingOverlay.classList.remove('show');
                 
             }
@@ -21,9 +23,6 @@
             // Meta tag update handler
             document.addEventListener('htmx:afterSwap', function(event) {
                  Prism.highlightAll();
-                 hideLoading()
-                 console.log("swap happen")
-                 loadingOverlay.classList.add("hide")
                 const xhr = event.detail.xhr;
                 const metaHeader = xhr.getResponseHeader('X-Meta-Data');
                 
