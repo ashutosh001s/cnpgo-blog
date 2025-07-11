@@ -1,18 +1,18 @@
-<article class="bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100 hover:-translate-y-2 transform">
+<article class="bg-dark-surface rounded-lg shadow-dark hover:shadow-dark-lg transition-all duration-300 overflow-hidden border border-dark-border hover:border-accent-blue group">
     {{template "post_image" .}}
     <div class="p-6">
-        <h3 class="text-xl font-bold text-gray-800 mb-2 leading-tight">{{.Title}}</h3>
-        <div class="text-gray-500 text-sm mb-4 flex items-center gap-2">
+        <h3 class="text-xl font-bold text-dark-text mb-2 leading-tight group-hover:text-accent-blue transition-colors duration-200">{{.Title}}</h3>
+        <div class="text-dark-text-muted text-sm mb-4 flex items-center gap-2">
             <span>{{.FormattedDate}}</span>
             <span>•</span>
             <span>{{.Author}}</span>
         </div>
-        <p class="text-gray-600 leading-relaxed mb-4">{{.Description}}</p>
+        <p class="text-dark-text-secondary leading-relaxed mb-4">{{.Description}}</p>
         <div class="flex flex-wrap gap-2 mb-4">
             {{template "tag_links" .}}
         </div>
         <a href="/post/{{.Slug}}" 
-           class="inline-flex items-center text-brand-orange font-semibold hover:text-brand-orange-light transition-colors duration-200 cursor-pointer" 
+           class="inline-flex items-center text-accent-blue font-medium hover:text-accent-blue-hover transition-colors duration-200 cursor-pointer" 
            hx-get="/post/{{.Slug}}" 
            hx-target="#main-content" 
            hx-push-url="/post/{{.Slug}}">

@@ -1,35 +1,98 @@
-<section class="bg-brand-gradient text-white py-20 relative overflow-hidden">
-    <div class="absolute inset-0 bg-hero-pattern animate-float opacity-30"></div>
-    <div class="container mx-auto px-5 text-center relative z-10">
-        <div class="max-w-4xl mx-auto">
-            <h1 class="text-5xl md:text-6xl font-bold mb-6 text-shadow-lg">CodeNPixel</h1>
-            <p class="text-xl md:text-2xl mb-8 opacity-90">Dive into Game Development & Graphics Programming</p>
-            <a href="/posts" class="bg-white text-brand-orange px-8 py-4 rounded-full font-bold text-lg hover:bg-gray-100 transition-all duration-300 transform hover:-translate-y-1 hover:shadow-2xl shadow-lg cursor-pointer"
-               hx-get="/posts" hx-target="#main-content" hx-push-url="/posts">
-                Explore Posts
-            </a>
+<section class="bg-dark-bg-secondary py-20">
+    <div class="container mx-auto px-6">
+        <div class="max-w-4xl mx-auto text-center">
+            <h1 class="text-4xl md:text-5xl font-bold text-dark-text mb-6">CodeNPixel</h1>
+            <p class="text-xl text-dark-text-secondary mb-8 max-w-2xl mx-auto">
+                A blog about game development, graphics programming, and the intersection of code and creativity
+            </p>
+            <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                <a href="/posts" class="bg-accent-blue text-white px-8 py-3 rounded-lg font-medium hover:bg-accent-blue-hover transition-colors duration-200 cursor-pointer"
+                   hx-get="/posts" hx-target="#main-content" hx-push-url="/posts">
+                    Browse Articles
+                </a>
+                <!-- <a href="#about" class="border border-dark-border text-dark-text px-8 py-3 rounded-lg font-medium hover:bg-dark-surface-hover transition-colors duration-200">
+                    Learn More
+                </a> -->
+            </div>
         </div>
     </div>
 </section>
-<section class="bg-gradient-to-r from-white to-orange-50 py-16 border-t-4 border-brand-orange">
-    <div class="container mx-auto px-5 text-center">
-        <h2 class="text-4xl font-bold text-brand-orange mb-4">Stay Updated</h2>
-        <p class="text-gray-600 mb-8 text-lg max-w-2xl mx-auto">
-            Get the latest insights on Unreal Engine, OpenGL, and game development straight to your inbox
-        </p>
-        <form class="flex flex-col sm:flex-row max-w-md mx-auto gap-3" hx-post="/newsletter" hx-swap="outerHTML">
-            <input type="email" name="email" placeholder="Enter your email address" required
-                   class="flex-1 px-6 py-4 border-2 border-brand-orange rounded-full text-lg outline-none focus:ring-4 focus:ring-brand-orange/30 transition-all duration-300">
-            <button type="submit" 
-                    class="bg-brand-orange text-white px-8 py-4 rounded-full font-bold text-lg hover:bg-brand-orange-dark transition-all duration-300 transform hover:-translate-y-1">
-                Subscribe
-            </button>
-        </form>
+
+
+
+<!-- <div class="flex justify-center">
+        <div class="w-1/2 border-t border-gray-300"></div>
+</div> -->
+
+<section class="bg-dark-bg-secondary py-20">
+    <div class="container mx-auto px-6">
+        <div class="max-w-6xl mx-auto">
+            <h2 class="text-3xl font-bold text-dark-text text-center mb-12">What You'll Find Here</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div class="text-center">
+                    <div class="w-16 h-16 bg-dark-surface rounded-lg flex items-center justify-center mx-auto mb-4">
+                        <svg class="w-8 h-8 text-accent-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-semibold text-dark-text mb-3">Game Development</h3>
+                    <p class="text-dark-text-secondary">In-depth tutorials and insights into modern game development techniques and best practices.</p>
+                </div>
+                <div class="text-center">
+                    <div class="w-16 h-16 bg-dark-surface rounded-lg flex items-center justify-center mx-auto mb-4">
+                        <svg class="w-8 h-8 text-accent-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-semibold text-dark-text mb-3">Graphics Programming</h3>
+                    <p class="text-dark-text-secondary">Explore OpenGL, shaders, and rendering techniques that bring games to life.</p>
+                </div>
+                <div class="text-center">
+                    <div class="w-16 h-16 bg-dark-surface rounded-lg flex items-center justify-center mx-auto mb-4">
+                        <svg class="w-8 h-8 text-accent-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-semibold text-dark-text mb-3">Personal Projects</h3>
+                    <p class="text-dark-text-secondary">Behind-the-scenes look at personal projects and experiments in game development.</p>
+                </div>
+            </div>
+        </div>
     </div>
 </section>
-<section class="py-20 bg-white" id="posts">
-    <div class="container mx-auto px-5">
-        <h2 class="text-4xl font-bold text-center text-brand-orange mb-12">Latest Posts</h2>
+
+
+<!-- <div class="flex justify-center">
+        <div class="w-1/2 border-t border-gray-300"></div>
+</div> -->
+
+<section class="bg-dark-bg-secondary py-20">
+    <div class="container mx-auto px-6">
+        <div class="max-w-4xl mx-auto text-center">
+            <h2 class="text-3xl font-bold text-dark-text mb-4">Stay Updated</h2>
+            <p class="text-dark-text-secondary mb-8 text-lg">
+                Get the latest insights on game development and graphics programming
+            </p>
+            <form class="flex flex-col sm:flex-row max-w-md mx-auto gap-3" hx-post="/newsletter" hx-swap="outerHTML">
+                <input type="email" name="email" placeholder="Enter your email address" required
+                       class="flex-1 px-4 py-3 border border-dark-border rounded-lg bg-dark-surface text-dark-text placeholder-dark-text-muted focus:outline-none focus:ring-2 focus:ring-accent-blue focus:border-transparent">
+                <button type="submit" 
+                        class="bg-accent-blue text-white px-6 py-3 rounded-lg font-medium hover:bg-accent-blue-hover transition-colors duration-200">
+                    Subscribe
+                </button>
+            </form>
+        </div>
+    </div>
+</section>
+
+
+<div class="flex justify-center py-20">
+        <div class="w-1/2 border-t border-gray-300"></div>
+</div>
+
+<section class="bg-dark-bg-secondary py-20" id="posts">
+    <div class="container mx-auto px-6">
+        <h2 class="text-3xl font-bold text-center text-dark-text mb-12">Latest Posts</h2>
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8" 
              hx-get="/api/posts?limit=6" hx-trigger="load" hx-swap="innerHTML" id="latest-posts">
             {{range $index, $post := .Posts}}
@@ -38,8 +101,8 @@
                 {{end}}
             {{else}}
                 <div class="htmx-indicator col-span-full text-center py-8">
-                    <div class="inline-block w-12 h-12 border-4 border-brand-orange border-t-transparent rounded-full animate-spin mb-4"></div>
-                    <p class="text-brand-orange font-semibold text-lg">Loading posts...</p>
+                    <div class="inline-block w-8 h-8 border-2 border-accent-blue border-t-transparent rounded-full animate-spin mb-4"></div>
+                    <p class="text-dark-text-secondary font-medium">Loading posts...</p>
                 </div>
             {{end}}
         </div>

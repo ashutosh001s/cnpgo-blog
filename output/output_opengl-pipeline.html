@@ -24,13 +24,15 @@ encapsulate vertex attribute state, making it easy to switch between
 different rendering configurations. A well-structured VAO setup can
 dramatically improve rendering performance by minimizing state changes
 during draw calls.</p>
-<pre class="cpp"><code>// Example VAO setup
+
+  <pre><code class="language-c">// Example VAO setup
 GLuint vao;
 glGenVertexArrays(1, &amp;vao);
 glBindVertexArray(vao);
 // Configure vertex attributes
 glEnableVertexAttribArray(0);
 glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);</code></pre>
+
 <h3 id="uniform-buffer-objects-ubos">Uniform Buffer Objects (UBOs)</h3>
 <p>UBOs revolutionize how shaders access uniform data. Instead of
 setting individual uniforms, developers can pack related data into

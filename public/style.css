@@ -1,0 +1,190 @@
+/* Enhanced Loading indicator with better transitions */
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(10, 10, 10, 0.95);
+    backdrop-filter: blur(8px);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.loading-overlay.show {
+    opacity: 1;
+    visibility: visible;
+}
+
+.loading-overlay.hide {
+    opacity: 0;
+    visibility: hidden;
+}
+
+/* Ensure loading overlay is always hidden by default */
+.loading-overlay:not(.show) {
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none;
+}
+
+/* Mobile menu styles */
+.mobile-menu {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 280px;
+    height: 100vh;
+    background: #111111;
+    transform: translateX(100%);
+    transition: transform 0.3s ease-in-out;
+    box-shadow: -2px 0 10px rgba(0, 0, 0, 0.3);
+    z-index: 1000;
+    border-left: 1px solid #333333;
+}
+
+.mobile-menu.open {
+    transform: translateX(0);
+}
+
+.mobile-menu-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 999;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.mobile-menu-overlay.show {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Smooth transitions */
+* {
+    transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+/* Gruvbox theme for code blocks */
+.prose pre[class*="language-"] {
+    background-color: #1d2021 !important;
+    color: #ebdbb2 !important;
+    padding: 1rem !important;
+    border-radius: 0.5rem !important;
+    overflow-x: auto !important;
+    font-size: 0.875rem !important;
+    line-height: 1.5 !important;
+    margin: 1.5rem 0 !important;
+}
+
+.prose code[class*="language-"] {
+    background-color: transparent !important;
+    color: inherit !important;
+    padding: 0 !important;
+    border-radius: 0 !important;
+    font-size: inherit !important;
+}
+
+.prose :not(pre) > code[class*="language-"] {
+    background-color: #1d2021 !important;
+    color: #ebdbb2 !important;
+    padding: 0.125rem 0.25rem !important;
+    border-radius: 0.25rem !important;
+    font-size: 0.875rem !important;
+}
+
+/* Prism token styles */
+.prose .token.comment,
+.prose .token.prolog,
+.prose .token.doctype,
+.prose .token.cdata {
+    color: #a89984 !important;
+}
+
+.prose .token.punctuation,
+.prose .token.operator,
+.prose .token.attr-name {
+    color: #a89984 !important;
+}
+
+.prose .token.property,
+.prose .token.constant,
+.prose .token.variable,
+.prose .token.deleted,
+.prose .token.delimiter,
+.prose .token.boolean,
+.prose .token.keyword,
+.prose .token.selector,
+.prose .token.important,
+.prose .token.atrule {
+    color: #fb4934 !important;
+}
+
+.prose .token.tag,
+.prose .token.tag .punctuation,
+.prose .token.doctype,
+.prose .token.builtin,
+.prose .token.function {
+    color: #fabd2f !important;
+}
+
+.prose .token.entity,
+.prose .token.number,
+.prose .token.symbol {
+    color: #d3869b !important;
+}
+
+.prose .token.string,
+.prose .token.char,
+.prose .token.url {
+    color: #b8bb26 !important;
+}
+
+.prose .token.attr-value,
+.prose .token.attr-value .punctuation {
+    color: #a89984 !important;
+}
+
+.prose .token.regex {
+    background: #b8bb26 !important;
+}
+
+.prose .token.bold {
+    font-weight: bold !important;
+}
+
+.prose .token.italic {
+    font-style: italic !important;
+}
+
+.prose .token.inserted {
+    background: #a89984 !important;
+}
+
+/* Selection styling for code blocks */
+.prose pre[class*="language-"]::-moz-selection,
+.prose pre[class*="language-"] ::-moz-selection,
+.prose code[class*="language-"]::-moz-selection,
+.prose code[class*="language-"] ::-moz-selection {
+    color: #fbf1c7 !important;
+    background: #7c6f64 !important;
+}
+
+.prose pre[class*="language-"]::selection,
+.prose pre[class*="language-"] ::selection,
+.prose code[class*="language-"]::selection,
+.prose code[class*="language-"] ::selection {
+    color: #fbf1c7 !important;
+    background: #7c6f64 !important;
+}
