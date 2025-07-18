@@ -29,7 +29,7 @@ document.addEventListener('DOMContentLoaded', function() {
         hideLoading();
         
         const xhr = event.detail.xhr;
-        const metaHeader = xhr.getResponseHeader('X-Meta-Data');
+        // const metaHeader = xhr.getResponseHeader('X-Meta-Data');
         
         if (metaHeader) {
             try {
